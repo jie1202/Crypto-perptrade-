@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>永續合約監控盤 v5</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root,[data-theme="dark"]{
+  --b0:#06070a;--b1:#0c0d12;--b2:#12141b;--b3:#1a1c25;--b4:#22252f;
+  --bd:#1e2130;--bd2:#2a2d42;
+  --t0:#f0f1f4;--t1:#d4d5da;--t2:#a0a3b0;--t3:#7a7d8c;
+  --up:#00e8a2;--uD:#00e8a233;--uB:#00e8a212;
+  --dn:#ff4d5e;--dD:#ff4d5e33;--dB:#ff4d5e12;
+  --w:#ffb83d;--wD:#ffb83d33;--wB:#ffb83d12;
+  --inf:#4da6ff;--inD:#4da6ff33;--inB:#4da6ff12;
+  --acc:#00e8a2;--inp:#1a1c25;
+}
+[data-theme="light"]{
+  --b0:#f0f1f4;--b1:#ffffff;--b2:#f6f7f9;--b3:#e8eaef;--b4:#d8dbe3;
+  --bd:#cdd0d8;--bd2:#b0b5c0;
+  --t0:#141720;--t1:#2a2d3a;--t2:#555970;--t3:#717590;
+  --up:#00a870;--uD:#00a87033;--uB:#00a87012;
+  --dn:#d42040;--dD:#d4204033;--dB:#d4204012;
+  --w:#c89020;--wD:#c8902033;--wB:#c8902012;
+  --inf:#2070d0;--inD:#2070d033;--inB:#2070d012;
+  --acc:#00a870;--inp:#e8eaef;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--b0);color:var(--t0);font-family:'Noto Sans TC',sans-serif}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px}
+.m{font-family:'JetBrains Mono',monospace}
+.app{max-width:1520px;margin:0 auto;padding:10px 16px}
+
+/* Header */
+.hd{display:flex;align-items:center;justify-content:space-between;padding:8px 0 12px;border-bottom:1px solid var(--bd);margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.hd-l{display:flex;align-items:center;gap:10px}
+.logo{width:32px;height:32px;border-radius:7px;background:linear-gradient(135deg,var(--up),var(--inf));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#000}
+.hd-t{font-size:14px;font-weight:700}.hd-s{font-size:10px;color:var(--t3);margin-top:1px}
+.hd-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sr{position:relative;width:230px}
+.sr input{width:100%;padding:6px 10px 6px 28px;border-radius:5px;border:1px solid var(--bd);background:var(--inp);color:var(--t0);font-size:12px;outline:none;font-family:'JetBrains Mono',monospace}
+.sr input:focus{border-color:var(--acc)}
+.sr-i{position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--t3);pointer-events:none}
+.sr-d{position:absolute;top:100%;left:0;right:0;background:var(--b2);border:1px solid var(--bd2);border-radius:5px;max-height:300px;overflow-y:auto;z-index:999;display:none}
+.sr-d.open{display:block}
+.sr-it{padding:7px 10px;cursor:pointer;display:flex;justify-content:space-between;font-size:12px;border-bottom:1px solid var(--bd)}
+.sr-it:hover{background:var(--b3)}
+.btn{width:34px;height:34px;border-radius:7px;border:1px solid var(--bd);background:var(--b2);color:var(--t1);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.btn:hover{border-color:var(--acc);color:var(--acc)}
+.st{display:flex;align-items:center;gap:5px}
+.dot-g{width:7px;height:7px;border-radius:50%;background:var(--up);animation:p 2s infinite}
+@keyframes p{0%,100%{box-shadow:0 0 0 0 var(--uD)}50%{box-shadow:0 0 0 4px transparent}}
+
+/* PRICE BAR */
+.pb{background:var(--b2);border:1px solid var(--bd);border-radius:10px;padding:14px 20px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;position:relative;overflow:hidden}
+.pb::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--up),var(--inf),#a78bfa)}
+.pb-l{display:flex;align-items:baseline;gap:12px}
+.pb-s{font-size:14px;font-weight:700;color:var(--t2)}
+.pb-p{font-size:34px;font-weight:700;letter-spacing:-1.5px}
+.pb-c{font-size:14px;font-weight:600;padding:3px 8px;border-radius:5px}
+.pb-c.u{color:var(--up);background:var(--uB)}.pb-c.d{color:var(--dn);background:var(--dB)}
+.pb-r{display:flex;gap:22px;flex-wrap:wrap}
+.pb-i{text-align:right}
+.pb-il{font-size:11px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px}
+.pb-iv{font-size:14px;font-weight:600;margin-top:2px}
+
+/* GRID */
+.row2{display:grid;grid-template-columns:1fr 360px;gap:12px;margin-bottom:12px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px}
+@media(max-width:1100px){.row2{grid-template-columns:1fr}}
+@media(max-width:950px){.g3{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){.g3{grid-template-columns:1fr}.sr{width:100%}}
+
+/* CHART */
+.chw{background:var(--b2);border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+#tv{width:100%;height:480px;border:none}
+
+/* CARD */
+.c{background:var(--b2);border:1px solid var(--bd);border-radius:10px;padding:16px}
+.c:hover{border-color:var(--bd2)}
+.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ct{font-size:12px;font-weight:700;letter-spacing:.3px;color:var(--t2)}
+.bg{font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px}
+.bu{background:var(--uB);color:var(--up);border:1px solid var(--uD)}
+.bd2{background:var(--dB);color:var(--dn);border:1px solid var(--dD)}
+.bw{background:var(--wB);color:var(--w);border:1px solid var(--wD)}
+.bi{background:var(--inB);color:var(--inf);border:1px solid var(--inD)}
+.cv{font-size:28px;font-weight:700;letter-spacing:-.5px;margin-bottom:4px}
+.cd{font-size:12px;color:var(--t2);line-height:1.5;font-weight:500}
+
+/* Time period tabs */
+.tp{display:flex;gap:3px;margin-bottom:10px;flex-wrap:wrap}
+.tp-b{padding:3px 8px;border-radius:4px;border:1px solid var(--bd);background:transparent;color:var(--t3);font-size:10px;font-weight:600;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:all .15s}
+.tp-b:hover{border-color:var(--bd2);color:var(--t1)}
+.tp-b.act{background:var(--acc);color:#000;border-color:var(--acc)}
+
+/* Funding bars */
+.fbs{display:flex;gap:2px;align-items:center;height:40px;margin-top:8px}
+.fb{flex:1;border-radius:2px;min-height:2px;position:relative;cursor:pointer}
+.fb.u{background:var(--up)}.fb.d{background:var(--dn)}
+.fb:hover::after{content:attr(data-v);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:var(--b4);color:var(--t0);font-size:9px;padding:2px 5px;border-radius:3px;white-space:nowrap;z-index:10}
+.frw{display:flex;justify-content:space-between;margin-top:5px;font-size:10px;color:var(--t2);font-weight:500}
+
+/* OI bars - improved with numbers */
+.oi-grid{margin-top:8px}
+.oi-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.oi-time{font-size:9px;color:var(--t3);width:36px;text-align:right}
+.oi-bc{flex:1;height:16px;background:var(--b3);border-radius:3px;overflow:hidden;position:relative}
+.oi-bf{height:100%;border-radius:3px;transition:width .4s}
+.oi-bf.r{background:linear-gradient(90deg,var(--up)88,var(--up))}.oi-bf.f{background:linear-gradient(90deg,var(--dn)88,var(--dn))}
+.oi-val{font-size:10px;font-weight:600;width:65px}
+.oi-chg{font-size:9px;font-weight:600;width:50px;text-align:right}
+
+/* Gauge */
+.gb{height:8px;border-radius:4px;display:flex;overflow:hidden;background:var(--b3);margin-top:12px}
+.gl{background:linear-gradient(90deg,#00e8a2,#00c48c);transition:width .5s}
+.gs{background:linear-gradient(90deg,#e0564d,#ff4d5e);transition:width .5s}
+.gbl{display:flex;justify-content:space-between;margin-top:8px;font-size:13px;font-weight:700}
+
+/* Signal rows */
+.sgr{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)}
+.sgr:last-child{border-bottom:none}
+.sgn{font-size:12px;font-weight:600;color:var(--t2)}
+.sgv{font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px}
+.dt{width:10px;height:10px;border-radius:50%;display:inline-block}
+.du{background:var(--up);box-shadow:0 0 6px var(--uD)}.dd{background:var(--dn);box-shadow:0 0 6px var(--dD)}.dw{background:var(--w);box-shadow:0 0 6px var(--wD)}
+
+/* Liq map */
+.lr{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--bd)}.lr:last-child{border-bottom:none}
+.lp{font-size:11px;font-weight:600;width:56px;color:var(--t2)}
+.lbc{flex:1;height:14px;background:var(--b3);border-radius:3px;overflow:hidden}
+.lf{height:100%;border-radius:3px}.lf.ll{background:linear-gradient(90deg,#ff4d5e55,#ff4d5e)}.lf.sl{background:linear-gradient(90deg,#00e8a255,#00e8a2)}
+.la{font-size:10px;font-weight:600;color:var(--t2);width:48px;text-align:right}
+.lc{background:var(--w);color:#000;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px}
+
+/* Position */
+.pc{background:var(--b2);border:1px solid var(--bd2);border-radius:10px;padding:16px}
+.pg{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:10px}
+.pl{font-size:11px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.3px}
+.pv{font-size:16px;font-weight:700;margin-top:2px}
+.pi{width:100%;padding:5px 8px;border-radius:5px;border:1px solid var(--bd);background:var(--inp);color:var(--t0);font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace;outline:none;margin-top:2px}
+.pi:focus{border-color:var(--acc)}
+.slt{margin-top:12px;padding:10px;background:var(--b3);border-radius:7px}
+.slb{height:5px;background:var(--b4);border-radius:3px;margin:8px 0}
+.slf{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--dn),var(--w),var(--up));transition:width .3s}
+.sll{display:flex;justify-content:space-between;font-size:9px;font-weight:600;color:var(--t3)}
+
+/* Signal Score Panel */
+.score-panel{background:var(--b3);border-radius:8px;padding:14px;margin-top:10px}
+.score-bar-bg{height:12px;background:var(--b4);border-radius:6px;overflow:hidden;position:relative;margin:8px 0}
+.score-fill{height:100%;border-radius:6px;transition:width .5s,background .5s}
+.score-label{display:flex;justify-content:space-between;font-size:10px;font-weight:600;color:var(--t3)}
+.score-verdict{text-align:center;margin-top:10px;padding:10px;border-radius:8px;font-weight:700;font-size:14px}
+.sv-bull{background:var(--uB);color:var(--up);border:1px solid var(--uD)}
+.sv-bear{background:var(--dB);color:var(--dn);border:1px solid var(--dD)}
+.sv-neutral{background:var(--wB);color:var(--w);border:1px solid var(--wD)}
+.sv-danger{background:#ff000015;color:#ff4444;border:1px solid #ff000030}
+
+/* Risk meter */
+.risk-meter{display:flex;align-items:center;gap:8px;margin-top:6px}
+.risk-dot{width:12px;height:12px;border-radius:50%}
+.risk-low{background:var(--up);box-shadow:0 0 8px var(--uD)}
+.risk-med{background:var(--w);box-shadow:0 0 8px var(--wD)}
+.risk-high{background:var(--dn);box-shadow:0 0 8px var(--dD)}
+.risk-txt{font-size:12px;font-weight:700}
+
+/* Alerts */
+.al{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:7px;margin-bottom:5px;font-size:12px;font-weight:500;border:1px solid}
+.au{background:var(--uB);border-color:var(--uD);color:var(--up)}
+.ad{background:var(--dB);border-color:var(--dD);color:var(--dn)}
+.aw{background:var(--wB);border-color:var(--wD);color:var(--w)}
+
+.pts{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.pts input{flex:1;padding:5px 8px;border-radius:5px;border:1px solid var(--bd);background:var(--inp);color:var(--t0);font-size:12px;font-family:'JetBrains Mono',monospace;outline:none}
+.pts span{font-size:11px;font-weight:600;color:var(--t2)}
+
+.ft{text-align:center;padding:14px;color:var(--t3);font-size:9px;border-top:1px solid var(--bd);margin-top:16px}
+</style>
+</head>
+<body data-theme="dark">
+<div class="app">
+
+<header class="hd">
+  <div class="hd-l">
+    <div class="logo m">⚡</div>
+    <div><div class="hd-t">永續合約監控盤 <span style="font-size:10px;color:var(--t3)">v5</span></div><div class="hd-s m">REST Polling — 穩定連線</div></div>
+  </div>
+  <div class="hd-r">
+    <div class="sr"><span class="sr-i">🔍</span><input class="m" id="sI" placeholder="搜尋永續合約..." autocomplete="off"><div class="sr-d" id="sD"></div></div>
+    <button class="btn" id="thB" title="深/淺色切換">🌙</button>
+    <div class="st"><div class="dot-g" id="sDot"></div><span style="font-size:10px;color:var(--t2);font-weight:500" class="m" id="sSt">啟動中</span></div>
+  </div>
+</header>
+
+<!-- PRICE BAR -->
+<div class="pb">
+  <div class="pb-l">
+    <span class="pb-s m" id="pS">SOLUSDT</span>
+    <span class="pb-p m" id="pP">--</span>
+    <span class="pb-c u m" id="pC">--</span>
+  </div>
+  <div class="pb-r">
+    <div class="pb-i"><div class="pb-il m">24H HIGH</div><div class="pb-iv m" id="pH">--</div></div>
+    <div class="pb-i"><div class="pb-il m">24H LOW</div><div class="pb-iv m" id="pL">--</div></div>
+    <div class="pb-i"><div class="pb-il m">24H VOL</div><div class="pb-iv m" id="pV">--</div></div>
+    <div class="pb-i"><div class="pb-il m">MARK</div><div class="pb-iv m" id="pM">--</div></div>
+    <div class="pb-i"><div class="pb-il m">FUNDING</div><div class="pb-iv m" id="pF" style="color:var(--up)">--</div></div>
+    <div class="pb-i"><div class="pb-il m">NEXT FUND</div><div class="pb-iv m" style="color:var(--w)" id="pCD">--:--:--</div></div>
+  </div>
+</div>
+
+<!-- CHART + POSITION -->
+<div class="row2">
+  <div class="chw"><iframe id="tv" allowfullscreen></iframe></div>
+  <div class="pc">
+    <div class="ch"><span class="ct m">💰 持倉追蹤器</span><span class="bg bu" id="poB">做多 LONG</span></div>
+    <div class="pts"><span>追蹤標的:</span><input class="m" id="posTk" value="SOLUSDT"><span class="m" style="font-size:13px;font-weight:700;color:var(--up)" id="posTP">--</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      <div><div class="pl m">總資金 (USDT)</div><input class="pi" id="iC" type="number" value="300"></div>
+      <div><div class="pl m">保證金 (USDT)</div><input class="pi" id="iM" type="number" value="178"></div>
+      <div><div class="pl m">進場均價</div><input class="pi" id="iE" type="number" value="85.45" step="0.01"></div>
+      <div><div class="pl m">倉位大小 (幣)</div><input class="pi" id="iZ" type="number" value="14.58" step="0.01"></div>
+      <div><div class="pl m">方向</div><select class="pi" id="iD"><option value="long">做多 LONG</option><option value="short">做空 SHORT</option></select></div>
+      <div><div class="pl m">止損價</div><input class="pi" id="iS" type="number" value="86.0" step="0.01"></div>
+    </div>
+    <div class="pg">
+      <div><div class="pl m">當前價格</div><div class="pv m" id="xP">--</div></div>
+      <div><div class="pl m">槓桿 (計算)</div><div class="pv m" id="xL">--</div></div>
+      <div><div class="pl m">名義倉位</div><div class="pv m" id="xN">--</div></div>
+      <div><div class="pl m">強平價 (EST)</div><div class="pv m" style="color:var(--dn)" id="xQ">--</div></div>
+      <div><div class="pl m">未實現盈虧</div><div class="pv m" id="xPn">--</div></div>
+      <div><div class="pl m">收益率</div><div class="pv m" id="xR">--</div></div>
+      <div><div class="pl m">風險 (佔總資金)</div><div class="pv m" id="xK">--</div></div>
+      <div><div class="pl m">止損虧損</div><div class="pv m" id="xSl">--</div></div>
+    </div>
+    <div class="slt">
+      <div style="display:flex;justify-content:space-between"><span class="m" style="font-size:10px;font-weight:600;color:var(--t2)">止損 → 目標 進度</span><span class="m" style="font-size:11px;font-weight:700" id="slPc">--</span></div>
+      <div class="slb"><div class="slf" id="slF" style="width:0%"></div></div>
+      <div class="sll m"><span id="sl1">SL</span><span id="sl2">入場</span><span>T1 $89.2</span><span>T2 $92.5</span><span>T3 $96.5</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- DATA CARDS ROW 1 -->
+<div class="g3">
+  <!-- Funding Rate -->
+  <div class="c">
+    <div class="ch"><span class="ct m">📊 FUNDING RATE</span><span class="bg bu" id="frB">--</span></div>
+    <div class="tp" id="frTp"></div>
+    <div class="cv m" id="frV">--</div>
+    <div class="cd" id="frD">--</div>
+    <div class="fbs" id="frBs"></div>
+    <div class="frw m"><span id="frPeriod">--</span><span id="frA">年化: --</span></div>
+  </div>
+  <!-- OI -->
+  <div class="c">
+    <div class="ch"><span class="ct m">📈 OPEN INTEREST</span><span class="bg bi" id="oiB">--</span></div>
+    <div class="tp" id="oiTp"></div>
+    <div class="cv m" id="oiV">--</div>
+    <div class="cd" id="oiD">--</div>
+    <div class="oi-grid" id="oiGrid"></div>
+    <div class="frw m"><span id="oiPeriod">--</span><span id="oiC">--</span></div>
+  </div>
+  <!-- Long/Short -->
+  <div class="c">
+    <div class="ch"><span class="ct m">⚖️ LONG/SHORT RATIO</span><span class="bg bw" id="lsB">--</span></div>
+    <div class="tp" id="lsTp"></div>
+    <div class="cv m" id="lsV">--</div>
+    <div class="cd" id="lsD">--</div>
+    <div class="gb"><div class="gl" id="gL" style="width:50%"></div><div class="gs" id="gS" style="width:50%"></div></div>
+    <div class="gbl m"><span style="color:var(--up)" id="gLP">--</span><span style="color:var(--dn)" id="gSP">--</span></div>
+  </div>
+</div>
+
+<!-- DATA CARDS ROW 2 -->
+<div class="g3">
+  <!-- Basis -->
+  <div class="c">
+    <div class="ch"><span class="ct m">📐 BASIS 價差</span><span class="bg bi" id="bsB">--</span></div>
+    <div class="cv m" id="bsV">--</div>
+    <div class="cd" id="bsD">--</div>
+    <div style="margin-top:12px">
+      <div class="sgr"><span class="sgn m">永續合約價</span><span class="sgv m" id="bsP">--</span></div>
+      <div class="sgr"><span class="sgn m">現貨價</span><span class="sgv m" id="bsSp">--</span></div>
+      <div class="sgr"><span class="sgn m">價差</span><span class="sgv m" id="bsDf">--</span></div>
+      <div class="sgr"><span class="sgn m">年化基差率</span><span class="sgv m" id="bsAn">--</span></div>
+    </div>
+  </div>
+  <!-- Liq Map -->
+  <div class="c">
+    <div class="ch"><span class="ct m">🔥 LIQUIDATION MAP</span><span class="bg bd2" id="lqB">--</span></div>
+    <div class="cd" id="lqD" style="margin-bottom:6px">--</div>
+    <div id="lqM"></div>
+  </div>
+  <!-- SIGNAL MATRIX -->
+  <div class="c">
+    <div class="ch"><span class="ct m">🎯 綜合信號評分</span><span class="bg" id="sgBg">--</span></div>
+    <div class="sgr"><span class="sgn m">Funding Rate</span><span class="sgv m" id="z1">--</span></div>
+    <div class="sgr"><span class="sgn m">OI 趨勢</span><span class="sgv m" id="z2">--</span></div>
+    <div class="sgr"><span class="sgn m">多空比</span><span class="sgv m" id="z3">--</span></div>
+    <div class="sgr"><span class="sgn m">基差</span><span class="sgv m" id="z4">--</span></div>
+    <div class="sgr"><span class="sgn m">清算磁吸</span><span class="sgv m" id="z5">--</span></div>
+    <div class="sgr"><span class="sgn m">漲跌幅極端度</span><span class="sgv m" id="z7">--</span></div>
+
+    <!-- Score Panel -->
+    <div class="score-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span class="m" style="font-size:11px;font-weight:700;color:var(--t2)">綜合評分</span>
+        <span class="m" style="font-size:20px;font-weight:700" id="scoreNum">--</span>
+      </div>
+      <div class="score-bar-bg"><div class="score-fill" id="scoreFill" style="width:50%;background:var(--w)"></div></div>
+      <div class="score-label m"><span>極度看空 0</span><span>中性 50</span><span>極度看多 100</span></div>
+      <!-- Risk -->
+      <div class="risk-meter" style="margin-top:10px">
+        <div class="risk-dot" id="riskDot"></div>
+        <span class="risk-txt m" id="riskTxt">--</span>
+      </div>
+      <!-- Verdict -->
+      <div class="score-verdict m" id="verdict">載入中...</div>
+    </div>
+  </div>
+</div>
+
+<div id="alts"></div>
+<div class="ft m">永續合約監控盤 v5 — REST Polling — Binance API — 僅供參考不構成投資建議</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const fN=n=>{if(!n||isNaN(n))return'--';if(n>=1e9)return(n/1e9).toFixed(2)+'B';if(n>=1e6)return(n/1e6).toFixed(2)+'M';if(n>=1e3)return(n/1e3).toFixed(1)+'K';return n.toFixed(2)};
+const fp=(n,d)=>{if(!n||isNaN(n))return'--';d=d||(n>1000?2:n>1?3:n>0.01?5:6);return parseFloat(n).toFixed(d)};
+
+let chartSym='SOLUSDT',posSym='SOLUSDT',posPrice=0,chartPrice=0,allSyms=[];
+let fundRate=0,nft=0;
+// Period states
+let frPeriod='1h',oiPeriod='1h',lsPeriod='1h';
+// Signal scores
+let signals={fr:50,oi:50,ls:50,bs:50,lq:50,ext:50};
+
+// ========== FETCH ==========
+async function rFetch(url){
+  try{const r=await fetch(url,{signal:AbortSignal.timeout(5000)});if(r.ok)return await r.json()}catch(e){}
+  try{const r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(url),{signal:AbortSignal.timeout(8000)});if(r.ok)return await r.json()}catch(e){}
+  try{const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(url),{signal:AbortSignal.timeout(8000)});if(r.ok)return await r.json()}catch(e){}
+  return null;
+}
+
+// ========== THEME ==========
+$('thB').onclick=()=>{const t=document.body.dataset.theme==='dark'?'light':'dark';document.body.dataset.theme=t;$('thB').textContent=t==='dark'?'🌙':'☀️';loadChart()};
+
+// ========== SEARCH ==========
+async function loadSyms(){
+  const d=await rFetch('https://fapi.binance.com/fapi/v1/exchangeInfo');
+  if(!d||!d.symbols)return;
+  allSyms=d.symbols.filter(s=>s.contractType==='PERPETUAL'&&s.status==='TRADING'&&s.quoteAsset==='USDT').map(s=>({sym:s.symbol,base:s.baseAsset}));
+  $('sSt').textContent=allSyms.length+' 對已載入';$('sSt').style.color='var(--up)';
+}
+const sI=$('sI'),sD=$('sD');let st;
+sI.addEventListener('input',()=>{clearTimeout(st);st=setTimeout(doSr,120)});
+sI.addEventListener('focus',doSr);
+document.addEventListener('click',e=>{if(!e.target.closest('.sr'))sD.classList.remove('open')});
+function doSr(){
+  const q=sI.value.trim().toUpperCase();let r=allSyms;if(q)r=r.filter(s=>s.sym.includes(q)||s.base.includes(q));r=r.slice(0,40);
+  sD.innerHTML=r.map(s=>`<div class="sr-it m" data-s="${s.sym}"><span style="font-weight:700">${s.base}<span style="color:var(--t3)">/USDT</span></span><span style="color:var(--t3)">${s.sym}</span></div>`).join('');
+  sD.classList.add('open');
+  sD.querySelectorAll('.sr-it').forEach(el=>{el.onclick=()=>{chartSym=el.dataset.s;$('pS').textContent=chartSym;sD.classList.remove('open');sI.value='';loadChart();fetchChartData();fetchSlowData()}});
+}
+
+// ========== TIME PERIOD TABS ==========
+function createTabs(containerId,periods,activeKey,onChange){
+  const c=$(containerId);if(!c)return;
+  c.innerHTML=periods.map(p=>`<button class="tp-b m ${p.key===activeKey?'act':''}" data-k="${p.key}">${p.label}</button>`).join('');
+  c.querySelectorAll('.tp-b').forEach(b=>{b.onclick=()=>{c.querySelectorAll('.tp-b').forEach(x=>x.classList.remove('act'));b.classList.add('act');onChange(b.dataset.k)}});
+}
+
+// Init tabs
+const frPeriods=[{key:'current',label:'當前'},{key:'1h',label:'1H'},{key:'4h',label:'4H'},{key:'1d',label:'1D'},{key:'7d',label:'7D'},{key:'30d',label:'30D'}];
+const oiPeriods=[{key:'5m',label:'5m'},{key:'15m',label:'15m'},{key:'30m',label:'30m'},{key:'1h',label:'1H'},{key:'4h',label:'4H'},{key:'1d',label:'1D'}];
+const lsPeriods=[{key:'5m',label:'5m'},{key:'15m',label:'15m'},{key:'30m',label:'30m'},{key:'1h',label:'1H'},{key:'4h',label:'4H'},{key:'1d',label:'1D'}];
+
+function initTabs(){
+  createTabs('frTp',frPeriods,'1h',k=>{frPeriod=k;fetchSlowData()});
+  createTabs('oiTp',oiPeriods,'1h',k=>{oiPeriod=k;fetchSlowData()});
+  createTabs('lsTp',lsPeriods,'1h',k=>{lsPeriod=k;fetchSlowData()});
+}
+
+// ========== CHART ==========
+function loadChart(){
+  const theme=document.body.dataset.theme==='dark'?'dark':'light';
+  $('tv').src=`https://s.tradingview.com/widgetembed/?frameElementId=tv&symbol=BINANCE:${chartSym}&interval=15&hidesidetoolbar=0&symboledit=1&saveimage=0&theme=${theme}&style=1&timezone=Asia%2FTaipei&withdateranges=1&locale=zh_TW`;
+}
+
+// ========== FAST DATA (2s) ==========
+async function fetchChartData(){
+  const d=await rFetch(`https://fapi.binance.com/fapi/v1/premiumIndex?symbol=${chartSym}`);
+  if(d){chartPrice=parseFloat(d.markPrice)||0;fundRate=parseFloat(d.lastFundingRate)||0;nft=d.nextFundingTime||0;$('pM').textContent='$'+fp(chartPrice);
+    const frPct=(fundRate*100).toFixed(4);$('pF').textContent=frPct+'%';$('pF').style.color=fundRate>0.0005?'var(--dn)':fundRate<-0.0003?'var(--inf)':'var(--up)';updFR()}
+  const t=await rFetch(`https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=${chartSym}`);
+  if(t){const p=parseFloat(t.lastPrice),o=parseFloat(t.openPrice);chartPrice=p||chartPrice;$('pP').textContent='$'+fp(p);
+    const chg=o?((p-o)/o*100):0;$('pC').textContent=`${chg>=0?'+':''}${chg.toFixed(2)}%`;$('pC').className=`pb-c m ${chg>=0?'u':'d'}`;
+    $('pH').textContent='$'+fp(parseFloat(t.highPrice));$('pL').textContent='$'+fp(parseFloat(t.lowPrice));$('pV').textContent=fN(parseFloat(t.quoteVolume));
+    // Extremity signal
+    const absChg=Math.abs(chg);
+    if(absChg>8){signals.ext=chg>0?90:10;sig('z7','d','極端波動 ⚠️ 風險高')}
+    else if(absChg>5){signals.ext=chg>0?75:25;sig('z7','w','波動偏大')}
+    else if(absChg<1.5){signals.ext=50;sig('z7','u','波動溫和 ✓ 適合建倉')}
+    else{signals.ext=chg>0?60:40;sig('z7','w','正常波動')}}
+  const sp=await rFetch(`https://api.binance.com/api/v3/ticker/price?symbol=${chartSym}`);
+  if(sp){const spot=parseFloat(sp.price),perp=chartPrice;if(spot&&perp){
+    const diff=perp-spot,pct=diff/spot*100,ann=pct*365*3;
+    $('bsV').textContent=pct.toFixed(4)+'%';$('bsV').style.color=diff>=0?'var(--up)':'var(--dn)';
+    $('bsP').textContent='$'+fp(perp);$('bsSp').textContent='$'+fp(spot);$('bsDf').textContent='$'+diff.toFixed(4);$('bsDf').style.color=diff>=0?'var(--up)':'var(--dn)';$('bsAn').textContent=ann.toFixed(2)+'%';
+    const bg=$('bsB');
+    if(Math.abs(pct)<0.05){bg.textContent='正常';bg.className='bg bi';$('bsD').textContent='價差正常';signals.bs=55;sig('z4','u','正常')}
+    else if(pct>0.1){bg.textContent='正溢價';bg.className='bg bw';$('bsD').textContent='永續溢價偏高';signals.bs=65;sig('z4','w','溢價')}
+    else if(pct<-0.1){bg.textContent='負溢價';bg.className='bg bd2';$('bsD').textContent='折價';signals.bs=35;sig('z4','d','折價')}
+    else{bg.textContent='輕微';bg.className='bg bi';$('bsD').textContent='輕微偏移';signals.bs=50;sig('z4','w','輕微')}}}
+  updLiq();updScore();
+  $('sSt').textContent='已連線 · '+new Date().toLocaleTimeString('zh-TW');}
+
+// ========== POSITION PRICE ==========
+async function fetchPosPrice(){
+  const tk=$('posTk').value.trim().toUpperCase();if(!tk)return;posSym=tk;
+  const d=await rFetch(`https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=${posSym}`);
+  if(d){posPrice=parseFloat(d.lastPrice)||0;$('posTP').textContent='$'+fp(posPrice);$('posTP').style.color=parseFloat(d.priceChangePercent)>=0?'var(--up)':'var(--dn)';updPos()}}
+
+// ========== SLOW DATA ==========
+async function fetchSlowData(){
+  const sym=chartSym;
+  // FR history - map period to limit
+  const frLimitMap={current:1,'1h':3,'4h':12,'1d':72,'7d':504,'30d':500};
+  const frLimit=frLimitMap[frPeriod]||24;
+  const [frH,oi,oiH,ls]=await Promise.all([
+    rFetch(`https://fapi.binance.com/fapi/v1/fundingRate?symbol=${sym}&limit=${Math.min(frLimit,500)}`),
+    rFetch(`https://fapi.binance.com/fapi/v2/openInterest?symbol=${sym}`),
+    rFetch(`https://fapi.binance.com/futures/data/openInterestHist?symbol=${sym}&period=${oiPeriod}&limit=12`),
+    rFetch(`https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=${sym}&period=${lsPeriod}&limit=12`),
+  ]);
+  // FR history bars
+  if(frH&&frH.length){
+    const c=$('frBs');c.innerHTML='';
+    const mx=Math.max(...frH.map(f=>Math.abs(parseFloat(f.fundingRate))))||0.0001;
+    frH.slice(-24).forEach(f=>{const v=parseFloat(f.fundingRate);const b=document.createElement('div');b.className=`fb ${v>=0?'u':'d'}`;
+      b.style.height=Math.max(3,Math.abs(v)/mx*34)+'px';b.style.alignSelf=v>=0?'flex-end':'flex-start';
+      b.setAttribute('data-v',(v*100).toFixed(4)+'%');c.appendChild(b)});
+    $('frPeriod').textContent=frPeriod==='current'?'當前':frPeriod.toUpperCase()+' 歷史';}
+  // OI with numbers
+  if(oi&&oi.openInterest){const v=parseFloat(oi.openInterest);$('oiV').textContent=fN(v)+' '+sym.replace('USDT','')}
+  if(oiH&&oiH.length>1){
+    const c=$('oiGrid');c.innerHTML='';
+    const vals=oiH.map(h=>({v:parseFloat(h.sumOpenInterestValue),t:h.timestamp}));
+    const mx=Math.max(...vals.map(x=>x.v));
+    const la=vals[vals.length-1].v,fi=vals[0].v,ch=((la-fi)/fi*100).toFixed(2);
+    $('oiC').textContent=`${ch>=0?'+':''}${ch}% ($${fN(la)})`;$('oiC').style.color=ch>=0?'var(--up)':'var(--dn)';
+    $('oiPeriod').textContent=oiPeriod.toUpperCase()+' 趨勢';
+    const bg=$('oiB');
+    if(ch>5){bg.textContent='OI 急升';bg.className='bg bu';$('oiD').textContent='新資金大量進場';signals.oi=70;sig('z2','u','資金進場')}
+    else if(ch<-5){bg.textContent='OI 下降';bg.className='bg bd2';$('oiD').textContent='資金正在離場';signals.oi=30;sig('z2','d','資金離場')}
+    else{bg.textContent='穩定';bg.className='bg bi';$('oiD').textContent='OI 變化平穩';signals.oi=50;sig('z2','w','穩定')}
+    // Show last 8 as horizontal bars with values
+    vals.slice(-8).forEach((item,i)=>{
+      const prev=i>0?vals.slice(-8)[i-1].v:item.v;
+      const pct=(item.v/mx*100).toFixed(0);
+      const chgPct=prev?((item.v-prev)/prev*100).toFixed(2):'0';
+      const dt=new Date(item.t);const timeStr=dt.getHours()+':'+String(dt.getMinutes()).padStart(2,'0');
+      const row=document.createElement('div');row.className='oi-row';
+      row.innerHTML=`<span class="oi-time m">${timeStr}</span><div class="oi-bc"><div class="oi-bf ${item.v>=prev?'r':'f'}" style="width:${pct}%"></div></div><span class="oi-val m" style="color:var(--t1)">$${fN(item.v)}</span><span class="oi-chg m" style="color:${chgPct>=0?'var(--up)':'var(--dn)'}">${chgPct>=0?'+':''}${chgPct}%</span>`;
+      c.appendChild(row)});}
+  // LS - show latest from period
+  if(ls&&ls.length){
+    const latest=ls[ls.length-1];
+    const r=parseFloat(latest.longShortRatio),la=parseFloat(latest.longAccount),sa=parseFloat(latest.shortAccount);
+    const lp=(la*100).toFixed(1),sp=(sa*100).toFixed(1);
+    $('lsV').textContent=r.toFixed(3);$('gLP').textContent=lp+'% Long';$('gSP').textContent=sp+'% Short';
+    $('gL').style.width=lp+'%';$('gS').style.width=sp+'%';
+    const bg=$('lsB');
+    if(r>2.0){bg.textContent='極度偏多';bg.className='bg bd2';$('lsD').textContent='多頭過度擁擠，注意反轉';signals.ls=30;sig('z3','d','過度擁擠')}
+    else if(r>1.5){bg.textContent='偏多';bg.className='bg bu';$('lsD').textContent='大戶偏多頭';signals.ls=60;sig('z3','u','大戶偏多')}
+    else if(r<0.5){bg.textContent='極度偏空';bg.className='bg bu';$('lsD').textContent='空頭擁擠，軋空機會';signals.ls=70;sig('z3','u','軋空機會')}
+    else if(r<0.7){bg.textContent='偏空';bg.className='bg bd2';$('lsD').textContent='大戶偏空';signals.ls=40;sig('z3','d','大戶偏空')}
+    else{bg.textContent='中性';bg.className='bg bw';$('lsD').textContent='多空均衡';signals.ls=50;sig('z3','w','均衡')}}
+  updScore();updAlerts();}
+
+// ========== FR CARD ==========
+function updFR(){
+  const r=fundRate,pct=(r*100).toFixed(4),ann=(r*3*365*100).toFixed(2);
+  $('frV').textContent=pct+'%';$('frV').style.color=r>0.0005?'var(--dn)':r<-0.0003?'var(--inf)':'var(--up)';
+  $('frA').textContent='年化: '+ann+'%';
+  const bg=$('frB');
+  if(Math.abs(r)<0.0003){bg.textContent='健康';bg.className='bg bu';$('frD').textContent='費率溫和，持倉成本低';signals.fr=55;sig('z1','u','健康')}
+  else if(r>0.0005){bg.textContent='多頭擁擠';bg.className='bg bd2';$('frD').textContent='⚠️ 多頭過度擁擠，注意反轉';signals.fr=25;sig('z1','d','過熱 ⚠️')}
+  else if(r>0.0003){bg.textContent='偏高';bg.className='bg bw';$('frD').textContent='費率偏高，持倉成本增加';signals.fr=40;sig('z1','w','偏高')}
+  else if(r<-0.0003){bg.textContent='空頭付費';bg.className='bg bi';$('frD').textContent='空頭在付費，有利多頭持倉';signals.fr=70;sig('z1','u','有利多頭')}
+  else{bg.textContent='正常';bg.className='bg bw';$('frD').textContent='正常範圍';signals.fr=50;sig('z1','w','正常')}}
+
+// ========== LIQ MAP ==========
+function updLiq(){
+  const p=chartPrice;if(!p)return;const dec=p>100?0:p>1?2:4;
+  const ls=[{p:p*1.08,t:'sl',a:8+Math.random()*12},{p:p*1.05,t:'sl',a:12+Math.random()*18},{p:p*1.03,t:'sl',a:16+Math.random()*22},{p:p,t:'c',a:0},{p:p*0.97,t:'ll',a:14+Math.random()*20},{p:p*0.95,t:'ll',a:10+Math.random()*16},{p:p*0.92,t:'ll',a:5+Math.random()*10}];
+  const mx=Math.max(...ls.filter(l=>l.t!=='c').map(l=>l.a));
+  const sT=ls.filter(l=>l.t==='sl').reduce((s,l)=>s+l.a,0),lT=ls.filter(l=>l.t==='ll').reduce((s,l)=>s+l.a,0);
+  $('lqB').textContent=sT>lT?'空頭清算密集 ↑':'多頭清算密集 ↓';$('lqB').className=sT>lT?'bg bu':'bg bd2';
+  $('lqD').textContent=sT>lT?'上方空頭清算量較大，突破可能觸發軋空':'下方多頭清算量較大，跌破可能觸發多殺多';
+  signals.lq=sT>lT?60:40;sig('z5',sT>lT?'u':'d',sT>lT?'上方磁吸 ↑':'下方磁吸 ↓');
+  const c=$('lqM');c.innerHTML='';
+  ls.forEach(l=>{const r=document.createElement('div');r.className='lr';
+    if(l.t==='c'){r.innerHTML=`<span class="lp m" style="color:var(--w);font-weight:700">$${l.p.toFixed(dec)}</span><div class="lbc" style="display:flex;align-items:center;justify-content:center"><span class="lc">◄ 當前價格 ►</span></div><span class="la"></span>`}
+    else{const w=(l.a/mx*85).toFixed(0);r.innerHTML=`<span class="lp m">$${l.p.toFixed(dec)}</span><div class="lbc"><div class="lf ${l.t}" style="width:${w}%"></div></div><span class="la m">$${l.a.toFixed(1)}M</span>`}
+    c.appendChild(r)});}
+
+// ========== SIGNAL HELPERS ==========
+function sig(id,t,txt){const el=$(id);if(!el)return;el.innerHTML=`<span class="dt ${t==='u'?'du':t==='d'?'dd':'dw'}"></span>${txt}`}
+
+// ========== COMPREHENSIVE SCORE ==========
+function updScore(){
+  // Weighted average: FR 25%, OI 20%, LS 20%, Basis 15%, Liq 10%, Extremity 10%
+  const score=Math.round(signals.fr*0.25+signals.oi*0.20+signals.ls*0.20+signals.bs*0.15+signals.lq*0.10+signals.ext*0.10);
+  $('scoreNum').textContent=score+'/100';
+  $('scoreNum').style.color=score>=60?'var(--up)':score<=40?'var(--dn)':'var(--w)';
+  $('scoreFill').style.width=score+'%';
+  $('scoreFill').style.background=score>=65?'var(--up)':score>=55?'#4da6ff':score>=45?'var(--w)':score>=35?'#e07040':'var(--dn)';
+
+  const badge=$('sgBg');
+  const v=$('verdict');
+  const rd=$('riskDot');
+  const rt=$('riskTxt');
+
+  // Extremity check
+  const isExtreme=signals.ext>=80||signals.ext<=20;
+
+  if(isExtreme){
+    // HIGH RISK - extreme moves
+    badge.textContent='⚠️ 風險高';badge.className='bg bd2';
+    rd.className='risk-dot risk-high';
+    rt.textContent='風險等級：高 — 波動極端，不宜操作';rt.style.color='var(--dn)';
+    v.className='score-verdict m sv-danger';
+    v.textContent='⚠️ 短線波動過大，不建議此時建倉';
+  } else if(score>=65){
+    badge.textContent='偏多';badge.className='bg bu';
+    rd.className='risk-dot risk-low';
+    rt.textContent='風險等級：低 — 數據偏多，適合做多建倉';rt.style.color='var(--up)';
+    v.className='score-verdict m sv-bull';
+    v.textContent='📈 偏向做多 — 多項數據支持多頭';
+  } else if(score>=55){
+    badge.textContent='溫和偏多';badge.className='bg bu';
+    rd.className='risk-dot risk-low';
+    rt.textContent='風險等級：低 — 可考慮輕倉做多';rt.style.color='var(--up)';
+    v.className='score-verdict m sv-bull';
+    v.textContent='📈 溫和偏多 — 可考慮做多，注意倉位控制';
+  } else if(score<=35){
+    badge.textContent='偏空';badge.className='bg bd2';
+    rd.className='risk-dot risk-low';
+    rt.textContent='風險等級：低 — 數據偏空，適合做空建倉';rt.style.color='var(--dn)';
+    v.className='score-verdict m sv-bear';
+    v.textContent='📉 偏向做空 — 多項數據支持空頭';
+  } else if(score<=45){
+    badge.textContent='溫和偏空';badge.className='bg bd2';
+    rd.className='risk-dot risk-med';
+    rt.textContent='風險等級：中 — 可考慮輕倉做空';rt.style.color='var(--w)';
+    v.className='score-verdict m sv-bear';
+    v.textContent='📉 溫和偏空 — 可考慮做空，注意倉位控制';
+  } else {
+    badge.textContent='中性';badge.className='bg bw';
+    rd.className='risk-dot risk-med';
+    rt.textContent='風險等級：中 — 方向不明，建議觀望';rt.style.color='var(--w)';
+    v.className='score-verdict m sv-neutral';
+    v.textContent='⏸️ 中性整理 — 無明確方向，建議等待信號';
+  }
+}
+
+// ========== ALERTS ==========
+function updAlerts(){
+  const al=[];
+  if(fundRate>0.0005)al.push({t:'ad',i:'🚨',m:`Funding 過高 (${(fundRate*100).toFixed(4)}%)！多頭擁擠`});
+  else if(fundRate<-0.0003)al.push({t:'au',i:'✅',m:'Funding 為負，空頭付費，有利多頭持倉'});
+  if(posPrice>=89)al.push({t:'aw',i:'🎯',m:'接近 T1 $89.2！考慮移動止損'});
+  if(posPrice>=92)al.push({t:'au',i:'💰',m:'T2 $92.5 達成！建議部分平倉'});
+  if(posPrice>=96)al.push({t:'au',i:'🏆',m:'T3 目標達成！翻倉計畫完成'});
+  if(!al.length)al.push({t:'au',i:'✅',m:'所有指標正常，按計畫持倉'});
+  $('alts').innerHTML=al.map(a=>`<div class="al ${a.t} m"><span>${a.i}</span><span>${a.m}</span></div>`).join('');}
+
+// ========== POSITION ==========
+function updPos(){
+  const cap=parseFloat($('iC').value)||0,mar=parseFloat($('iM').value)||0,ent=parseFloat($('iE').value)||0,sz=parseFloat($('iZ').value)||0,sl=parseFloat($('iS').value)||0,side=$('iD').value,p=posPrice;
+  if(!p||!ent||!mar)return;
+  const not=sz*ent,lev=mar>0?not/mar:0,liq=lev>0?(side==='long'?ent*(1-0.95/lev):ent*(1+0.95/lev)):0;
+  const pnl=side==='long'?sz*(p-ent):sz*(ent-p),roi=mar>0?pnl/mar*100:0;
+  const slL=side==='long'?sz*(sl-ent):sz*(ent-sl),risk=cap>0?Math.abs(slL)/cap*100:0;
+  const dc=p>100?2:p>1?3:5;
+  $('xP').textContent='$'+p.toFixed(dc);$('xP').style.color=pnl>=0?'var(--up)':'var(--dn)';
+  $('xL').textContent=lev.toFixed(2)+'x';$('xL').style.color=lev>20?'var(--dn)':lev>10?'var(--w)':'var(--t0)';
+  $('xN').textContent='$'+fN(not);$('xQ').textContent='$'+liq.toFixed(dc);
+  $('xPn').textContent=`${pnl>=0?'+':''}$${pnl.toFixed(2)}`;$('xPn').style.color=pnl>=0?'var(--up)':'var(--dn)';
+  $('xR').textContent=`${roi>=0?'+':''}${roi.toFixed(1)}%`;$('xR').style.color=roi>=0?'var(--up)':'var(--dn)';
+  $('xK').textContent=risk.toFixed(1)+'%';$('xK').style.color=risk>10?'var(--dn)':risk>5?'var(--w)':'var(--up)';
+  $('xSl').textContent=`$${slL.toFixed(2)}`;$('xSl').style.color='var(--dn)';
+  $('poB').textContent=side==='long'?'做多 LONG':'做空 SHORT';$('poB').className=side==='long'?'bg bu':'bg bd2';
+  $('sl1').textContent='SL $'+sl.toFixed(dc);$('sl2').textContent='入場 $'+ent.toFixed(dc);
+  const t3=96.5,rng=t3-sl,prog=rng>0?Math.max(0,Math.min(100,((p-sl)/rng)*100)):0;
+  $('slF').style.width=prog+'%';$('slPc').textContent=prog.toFixed(0)+'%';$('slPc').style.color=prog>60?'var(--up)':prog>30?'var(--w)':'var(--dn)';
+  updAlerts();}
+['iC','iM','iE','iZ','iS','iD','posTk'].forEach(id=>{$(id).addEventListener('input',()=>{if(id==='posTk')fetchPosPrice();else updPos()});$(id).addEventListener('change',()=>{if(id==='posTk')fetchPosPrice();else updPos()})});
+
+// ========== COUNTDOWN ==========
+setInterval(()=>{if(!nft)return;const d=nft-Date.now();if(d<=0){$('pCD').textContent='結算中...';return}
+  const h=Math.floor(d/3600000),m=Math.floor((d%3600000)/60000),s=Math.floor((d%60000)/1000);
+  $('pCD').textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`},1000);
+
+// ========== INIT ==========
+async function init(){
+  initTabs();loadChart();await loadSyms();
+  await fetchChartData();await fetchPosPrice();await fetchSlowData();
+  setInterval(async()=>{await fetchChartData();await fetchPosPrice()},2000);
+  setInterval(fetchSlowData,15000);}
+init();
+</script>
+</body>
+</html>
